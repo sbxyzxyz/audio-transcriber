@@ -1,5 +1,5 @@
 # test_formatter.py
-from formatter import format_ms, format_transcript, segment_words
+from formatter import format_ms, format_transcript, segment_words, _otsu_threshold
 
 
 def test_format_ms():
@@ -45,23 +45,37 @@ def test_segment_words_joins_short_gap():
         {"start": 1.1, "end": 2.0, "word": "给大家"},
         {"start": 2.1, "end": 3.0, "word": "讲讲"},
     ]
-    segs = segment_words(words, pause_seconds=0.5)
+    segs = segment_words(words)
     assert len(segs) == 1
-    assert segs[0]["start"] == 0.0
-    assert segs[0]["end"] == 3.0
     assert segs[0]["text"] == "今天给大家讲讲"
 
 
 def test_segment_words_splits_long_gap():
-    """间隔超过阈值（明显停顿）应切开成两句。"""
+    """间隔明显大于句内（句子边界）应切开。"""
     words = [
         {"start": 0.0, "end": 1.0, "word": "大家好"},
         {"start": 3.0, "end": 4.0, "word": "今天"},
     ]
-    segs = segment_words(words, pause_seconds=0.5)
+    segs = segment_words(words)
     assert len(segs) == 2
     assert segs[0]["text"] == "大家好"
     assert segs[1]["text"] == "今天"
+
+
+def test_segment_words_adaptive_threshold():
+    """Otsu 应自动区分句内(0)与句间(大间隔)两群。"""
+    words = [
+        {"start": 0.0, "end": 0.5, "word": "大家"},
+        {"start": 0.5, "end": 1.0, "word": "好"},
+        {"start": 2.5, "end": 3.0, "word": "欢迎"},
+        {"start": 3.0, "end": 3.5, "word": "大家"},
+    ]
+    gaps = [w["start"] - p["end"] for p, w in zip(words, words[1:])]
+    t = _otsu_threshold(gaps)
+    # 阈值应落在大间隔(1.5)与句内(0)之间
+    assert 0 < t <= 1.5
+    segs = segment_words(words)
+    assert len(segs) == 2
 
 
 def test_segment_words_keeps_single():
