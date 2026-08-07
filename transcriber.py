@@ -10,7 +10,7 @@ MODELS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
 MODEL_SIZES = {
     "极速": os.path.join(MODELS_DIR, "small"),
     "标准": os.path.join(MODELS_DIR, "medium"),
-    "高精度": "large-v3",  # 首次使用自动下载
+    "高精度": os.path.join(MODELS_DIR, "large-v3"),
 }
 
 LANGUAGES = {
