@@ -45,7 +45,7 @@ class App:
         opts = tk.Frame(root)
         opts.pack(pady=4)
         tk.Label(opts, text="精度:", font=("Microsoft YaHei", 10)).grid(row=0, column=0)
-        self.model_var = tk.StringVar(value="标准")
+        self.model_var = tk.StringVar(value="高精度")
         ttk.Combobox(opts, textvariable=self.model_var, width=8,
                      values=list(MODEL_SIZES), state="readonly").grid(row=0, column=1, padx=8)
         tk.Label(opts, text="语言:", font=("Microsoft YaHei", 10)).grid(row=0, column=2)
