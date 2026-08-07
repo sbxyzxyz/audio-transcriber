@@ -30,9 +30,15 @@ class Transcriber:
         except Exception:
             self.model = WhisperModel(self.model_size, device="cpu", compute_type="int8")
 
-    def transcribe(self, audio_path: str) -> list[dict]:
+    def transcribe(self, audio_path: str) -> dict:
         segments_iter, _info = self.model.transcribe(
-            audio_path, language=self.language, vad_filter=True
+            audio_path, language=self.language, vad_filter=True,
+            word_timestamps=True,
         )
-        return [{"start": seg.start, "end": seg.end, "text": seg.text}
-                for seg in segments_iter]
+        segments = []
+        words = []
+        for seg in segments_iter:
+            segments.append({"start": seg.start, "end": seg.end, "text": seg.text})
+            for w in (seg.words or []):
+                words.append({"start": w.start, "end": w.end, "word": w.word})
+        return {"segments": segments, "words": words}

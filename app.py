@@ -18,7 +18,7 @@ class App:
     def __init__(self, root):
         self.root = root
         root.title("视频转文字稿工具")
-        root.geometry("560x420")
+        root.geometry("640x420")
 
         self.file_path = None
 
@@ -52,7 +52,11 @@ class App:
         self.lang_var = tk.StringVar(value="中文")
         ttk.Combobox(opts, textvariable=self.lang_var, width=8,
                      values=list(LANGUAGES), state="readonly").grid(row=0, column=3, padx=8)
-        ttk.Button(opts, text="选择文件", command=self.choose_file).grid(row=0, column=4, padx=8)
+        tk.Label(opts, text="分句:", font=("Microsoft YaHei", 10)).grid(row=0, column=4)
+        self.merge_var = tk.StringVar(value="按句子")
+        ttk.Combobox(opts, textvariable=self.merge_var, width=8,
+                     values=["按句子", "按停顿"], state="readonly").grid(row=0, column=5, padx=8)
+        ttk.Button(opts, text="选择文件", command=self.choose_file).grid(row=0, column=6, padx=8)
 
         # 开始按钮
         self.start_btn = ttk.Button(root, text="开始转文字", command=self.start)
@@ -98,8 +102,9 @@ class App:
             model_size = self.model_var.get()
             language = LANGUAGES[self.lang_var.get()]
             tr = Transcriber(model_size, language)
-            segments = tr.transcribe(self.file_path)
-            text = format_transcript(segments)
+            result = tr.transcribe(self.file_path)
+            merge = (self.merge_var.get() == "按句子")
+            text = format_transcript(result, merge=merge)
             out_path = os.path.splitext(self.file_path)[0] + "_文字稿.txt"
             with open(out_path, "w", encoding="utf-8") as f:
                 f.write(text)
