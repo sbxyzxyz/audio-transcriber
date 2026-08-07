@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 *_文字稿.txt
 test_sine.wav
+test_voice.wav
+models/
