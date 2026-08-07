@@ -17,7 +17,8 @@ LANGUAGES = {
 class Transcriber:
     def __init__(self, model_size: str, language: str | None):
         self.model_size = MODEL_SIZES.get(model_size, "medium")
-        self.language = language
+        # 兼容传入显示名（如"中文"）或语言代码（如"zh"）
+        self.language = LANGUAGES.get(language, language)
         # 优先 GPU，失败回退 CPU
         try:
             self.model = WhisperModel(self.model_size, device="cuda", compute_type="float16")
