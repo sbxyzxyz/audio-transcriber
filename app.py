@@ -53,9 +53,9 @@ class App:
         ttk.Combobox(opts, textvariable=self.lang_var, width=8,
                      values=list(LANGUAGES), state="readonly").grid(row=0, column=3, padx=8)
         tk.Label(opts, text="分句:", font=("Microsoft YaHei", 10)).grid(row=0, column=4)
-        self.merge_var = tk.StringVar(value="按句子")
+        self.merge_var = tk.StringVar(value="按间隔")
         ttk.Combobox(opts, textvariable=self.merge_var, width=8,
-                     values=["按句子", "按停顿"], state="readonly").grid(row=0, column=5, padx=8)
+                     values=["按间隔", "按句子", "按停顿"], state="readonly").grid(row=0, column=5, padx=8)
         ttk.Button(opts, text="选择文件", command=self.choose_file).grid(row=0, column=6, padx=8)
 
         # 开始按钮
@@ -103,8 +103,8 @@ class App:
             language = LANGUAGES[self.lang_var.get()]
             tr = Transcriber(model_size, language)
             result = tr.transcribe(self.file_path)
-            merge = (self.merge_var.get() == "按句子")
-            text = format_transcript(result, merge=merge)
+            mode = {"按间隔": "interval", "按句子": "sentence", "按停顿": "raw"}[self.merge_var.get()]
+            text = format_transcript(result, mode=mode)
             out_path = os.path.splitext(self.file_path)[0] + "_文字稿.txt"
             with open(out_path, "w", encoding="utf-8") as f:
                 f.write(text)

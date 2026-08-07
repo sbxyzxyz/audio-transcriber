@@ -84,6 +84,57 @@ def segment_words(words: list) -> list[dict]:
     return sentences
 
 
+def segment_by_interval(words: list, target_seconds: float = 4.0,
+                        max_seconds: float = 6.0) -> list[dict]:
+    """按固定时间间隔分句：大约每隔 target_seconds 一个时间戳。
+
+    逻辑：
+    - 句子时长达到 target_seconds 后，遇到自然停顿点（词间间隔）就切分
+    - 若句子超过 max_seconds 仍无停顿，强制切分（防止一句拖太长）
+    返回 [{start, end, text}]。
+    """
+    if not words:
+        return []
+    # 第一步：按停顿切出语义句（Otsu 自适应），保证句子完整
+    sentences = segment_words(words)
+    # 第二步：按目标间隔合并——太短的相邻句并起来，达到 target 再开新条
+    merged = []
+    cur = sentences[0]
+    for nxt in sentences[1:]:
+        if (nxt["end"] - cur["start"]) <= target_seconds:
+            # 合并后仍不超 target，并起来
+            cur = {"start": cur["start"], "end": nxt["end"], "text": cur["text"] + nxt["text"]}
+        else:
+            merged.append(cur)
+            cur = nxt
+    merged.append(cur)
+    # 第三步：超长保护——合并后仍超 max_seconds 的长句，在词边界处强切
+    final = []
+    for seg in merged:
+        if seg["end"] - seg["start"] <= max_seconds:
+            final.append(seg)
+            continue
+        # 长句按词流重切，每段不超过 target
+        seg_words = _split_by_time(words, seg["start"], seg["end"], target_seconds)
+        final.extend(seg_words)
+    return final
+
+
+def _split_by_time(words: list, start: float, end: float, target: float) -> list:
+    """把 [start,end] 区间内的词按时间切段，每段不超过 target 秒。"""
+    chunk_words = [w for w in words if w["start"] >= start - 0.01 and w["end"] <= end + 0.01]
+    chunks = []
+    cur = []
+    for w in chunk_words:
+        cur.append(w)
+        if w["end"] - cur[0]["start"] >= target:
+            chunks.append(_make_sentence(cur))
+            cur = []
+    if cur:
+        chunks.append(_make_sentence(cur))
+    return chunks
+
+
 def _make_sentence(word_list: list) -> dict:
     text = ""
     for w in word_list:
@@ -95,15 +146,19 @@ def _make_sentence(word_list: list) -> dict:
     return {"start": word_list[0]["start"], "end": word_list[-1]["end"], "text": text.strip()}
 
 
-def format_transcript(data: dict, merge: bool = True) -> str:
+def format_transcript(data: dict, mode: str = "sentence") -> str:
     """把转写结果（含 segments/words）拼成带时间戳文字稿。
 
     data 结构：{"segments": [{start,end,text}], "words": [{start,end,word}]}
-    merge=True 时用词流按停顿切句（自适应阈值，一句一个小停顿不拆开）；
-    merge=False 时用引擎原始分段（每处停顿都单独一条）。
+    mode 取值：
+      - "sentence"：按停顿自适应切句，一句一个小停顿不拆开
+      - "interval"：按固定时间间隔分句（约 4 秒一条）
+      - "raw"：引擎原始分段（每处停顿都单独一条，最细）
     每行格式：[mm:ss.mmm - mm:ss.mmm] 文本
     """
-    if merge:
+    if mode == "interval":
+        segments = segment_by_interval(data["words"])
+    elif mode == "sentence":
         segments = segment_words(data["words"])
     else:
         segments = data["segments"]
