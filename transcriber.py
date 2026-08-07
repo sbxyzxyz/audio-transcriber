@@ -29,5 +29,5 @@ class Transcriber:
         segments_iter, _info = self.model.transcribe(
             audio_path, language=self.language, vad_filter=True
         )
-        return [{"start": seg.start, "text": seg.text}
+        return [{"start": seg.start, "end": seg.end, "text": seg.text}
                 for seg in segments_iter]
