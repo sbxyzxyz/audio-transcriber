@@ -32,4 +32,4 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest test_formatter.py -v
+          python -m pytest -v
